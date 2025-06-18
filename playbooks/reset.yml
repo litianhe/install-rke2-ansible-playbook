@@ -1,0 +1,10 @@
+---
+- name: Gather facts
+  import_playbook: facts.yml
+
+- name: uninstall rke2 on all rke2 nodes
+  hosts: all
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: rke2/uninstall }
+  

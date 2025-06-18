@@ -1,0 +1,116 @@
+---
+- name: Server | Generate rke2 configrations for server node
+  when: "'rke2-server-group' in group_names"
+  block: 
+  - name: Server | Ensure /etc/rancher/rke2 directory exists
+    file:
+      path: /etc/rancher/rke2
+      state: directory
+      mode: '0644'
+
+  - name: Server | Generate registries.yaml on server node
+    template:
+      src: templates/registries.yaml.tpl
+      dest: /etc/rancher/rke2/registries.yaml
+      mode: '0644'
+    when: docker_mirror is defined and docker_mirror != ''
+
+  - name: Server | Generate config.yaml on server node
+    template:
+      src: templates/config.yaml.tpl
+      dest: /etc/rancher/rke2/config.yaml
+      mode: '0644'
+
+  - name: Server | Ensure /var/lib/rancher/rke2/server/manifests directory exists on server nodes
+    file:
+      path: /var/lib/rancher/rke2/server/manifests
+      state: directory
+      mode: '0644'
+
+  - name: Server | Get IP and interface for cilium
+    set_fact:
+      network_ip: "{{ ansible_default_ipv4.address }}"
+      network_interface: "{{ ansible_default_ipv4.interface }}"
+    changed_when: false
+
+  - name: Server | Generate rke2-cilium-config.yaml on nodes
+    template:
+      src: templates/rke2-cilium-config.yaml.tpl
+      dest: /var/lib/rancher/rke2/server/manifests/rke2-cilium-config.yaml
+      mode: '0644'
+    vars:
+      ip: "{{ network_ip }}"
+      network_interface: "{{ network_interface }}"
+
+  - name: Server | Create rke2-cilium.conf for cilium to work with NetworkManager
+    blockinfile:
+      path: /etc/NetworkManager/conf.d/rke2-cilium.conf
+      block: |-
+        [keyfile]
+        unmanaged-devices=interface-name:cilium*
+      mode: '0644'
+      create: yes
+      marker: "# {mark} ANSIBLE AUTO MANAGED BLOCK"
+      state: present
+
+  - name: Server | Reload NetworkManager
+    shell: systemctl reload NetworkManager
+    become: yes
+
+  - name: Server | Generate rke2-coredns-config.yaml on nodes
+    template:
+      src: templates/rke2-coredns-config.yaml.tpl
+      dest: /var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml
+      mode: '0644'
+  
+  - name: Server | Create kube.sh file to include rke2 path
+    blockinfile:
+      path: /etc/profile.d/kube.sh
+      block: |-
+        export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+      mode: '0644'
+      create: yes
+      marker: "# {mark} ANSIBLE AUTO MANAGED BLOCK"
+      state: present
+
+  - name: Server | Source the new PATH
+    shell: source /etc/profile.d/kube.sh
+    args:
+      executable: /bin/bash
+
+  # sudo visudo -f /etc/sudoers.d/kube
+  - name: Server | Create /etc/sudoers.d/kube file to use command like 'sudo kubectl get pods' 
+    copy:
+      dest: /etc/sudoers.d/kube
+      content: |
+        Defaults env_keep += "PATH KUBECONFIG"
+        Defaults secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/var/lib/rancher/rke2/bin
+      mode: '0644'
+    notify: Reload systemd configuration
+
+  - name: Server | Ensure /var/lib/rancher/rke2/server/tls/etcd directory exists on server nodes
+    file:
+      path: /var/lib/rancher/rke2/server/tls/etcd
+      state: directory
+      mode: '0644'
+
+  - name: Server | Apply custom CA certificates
+    when: ca_cert_data_dir is defined and ca_cert_data_dir != ''
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      mode: '0644'
+    loop:
+      - { src: "{{ ca_cert_data_dir }}/server/tls/server-ca.crt", dest: "/var/lib/rancher/rke2/server/tls/server-ca.crt" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/server-ca.key", dest: "/var/lib/rancher/rke2/server/tls/server-ca.key" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/client-ca.crt", dest: "/var/lib/rancher/rke2/server/tls/client-ca.crt" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/client-ca.key", dest: "/var/lib/rancher/rke2/server/tls/client-ca.key" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/request-header-ca.crt", dest: "/var/lib/rancher/rke2/server/tls/request-header-ca.crt" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/request-header-ca.key", dest: "/var/lib/rancher/rke2/server/tls/request-header-ca.key" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/etcd/peer-ca.crt", dest: "/var/lib/rancher/rke2/server/tls/etcd/peer-ca.crt" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/etcd/peer-ca.key", dest: "/var/lib/rancher/rke2/server/tls/etcd/peer-ca.key" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/etcd/server-ca.crt", dest: "/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/etcd/server-ca.key", dest: "/var/lib/rancher/rke2/server/tls/etcd/server-ca.key" }
+      - { src: "{{ ca_cert_data_dir }}/server/tls/service.key", dest: "/var/lib/rancher/rke2/server/tls/service.key" }
+    register: copy_result
+    failed_when: copy_result is failed

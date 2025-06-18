@@ -1,0 +1,34 @@
+---
+- name: Server | Verify RKE2 nodes
+  when: "'rke2-server-group' in group_names"
+  block:
+  - name: Server | Check that all nodes are running and ready
+    block:
+    - name: Server | Run kubectl get nodes
+      shell: kubectl get nodes --no-headers -o yaml
+      changed_when: false
+      register: kubectl_get_nodes_yaml
+      until:
+      - "(kubectl_get_nodes_yaml.stdout | from_yaml)['items'] | length == groups['rke2-agent-group'] | length + groups['rke2-server-group'] | length"
+      - "(kubectl_get_nodes_yaml.stdout | from_yaml)['items'] | map(attribute='status.conditions') | map('items2dict', key_name='type', value_name='status') | map(attribute='Ready') | list | min == 'True'"
+      retries: 60
+      delay: 10
+    always:
+      - name: Server | Get all nodes status
+        shell: kubectl get nodes --no-headers
+        changed_when: false
+        register: kubectl_get_nodes
+        no_log: true
+      - name: Server | Debug kubectl get nodes output on retry
+        debug:
+          msg: "{{ kubectl_get_nodes.stdout.split('\n') }}"
+
+  - name: Server | Wait all pods to be ready
+    when: "'rke2-server-group' in group_names"
+    shell: |
+      sleep 10
+      kubectl get pods -A --no-headers | grep -v Running | grep -v Completed
+    register: pods_check
+    failed_when: pods_check.rc == 0 or pods_check.stdout != ""
+    retries: 60
+    changed_when: false

@@ -1,0 +1,3 @@
+---
+- name: Download RKE2 airgap artifacts and images
+  ansible.builtin.import_playbook: playbooks/download.yml

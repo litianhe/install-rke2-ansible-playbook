@@ -1,0 +1,6 @@
+---
+- name: Update hostname for each node
+  hostname:
+    name: "{{ inventory_hostname }}"
+  notify:
+    - update hosts file

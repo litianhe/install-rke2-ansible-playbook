@@ -1,0 +1,7 @@
+---
+- name: clean up rke2 install packages
+  block:
+  - name: Remove rke2 install packages
+    shell: rm -rf {{ rke2_artifact_path_remote }}
+
+      

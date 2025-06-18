@@ -1,0 +1,6 @@
+---
+- name: Update hostname
+  import_tasks: 0010-update_hostname.yml
+
+- name: Config NTP server
+  import_tasks: 0020-config_ntp.yml

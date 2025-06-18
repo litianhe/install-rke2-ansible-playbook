@@ -1,0 +1,6 @@
+---
+- name: download required rke2 artifacts and images
+  hosts: localhost
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: rke2/download }

@@ -1,0 +1,13 @@
+---
+- name: Agent | Run rke2 agent service
+  when: "'rke2-agent-group' in group_names"
+  block: 
+  - name: Agent | Enable rke2 agent service
+    block: 
+    - name: Enable rke2-agent service on agent nodes
+      shell: systemctl enable rke2-agent.service
+
+    - name: Agent | Start rke2-agent service on agent nodes
+      shell: systemctl start rke2-agent.service
+
+

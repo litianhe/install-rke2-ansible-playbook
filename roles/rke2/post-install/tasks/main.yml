@@ -1,0 +1,8 @@
+- name: clean up OS on nodes
+  import_tasks: 0010-cleanup_os.yml
+
+- name: clean up temp files for rke2 installation
+  import_tasks: 0020-cleanup_tmpfiles.yml
+
+- name: hooray we are done
+  import_tasks: 0777-hooray.yml

@@ -1,0 +1,20 @@
+---
+- name: All | Install helm
+  when: "helm_enabled and 'rke2-server-group' in group_names"
+  block:
+  - name: All | Ensure helm temp directory exists
+    file:
+      path: "{{ rke2_artifact_path_remote }}/rke2-airgap-images/helm"
+      state: directory
+      mode: '0644'
+
+  - name: All | Decompress helm tarball
+    shell: >
+      tar xzfv "{{ rke2_artifact_path_remote }}/rke2-airgap-images/helm-{{ helm_version }}-linux-amd64.tar.gz"
+      -C "{{ rke2_artifact_path_remote }}/rke2-airgap-images/helm"
+
+  - name: All | Copy helm binary to nodes
+    shell: |
+      cp "{{ rke2_artifact_path_remote }}/rke2-airgap-images/helm/linux-amd64/helm" /usr/local/bin/helm
+      chmod 0700 /usr/local/bin/helm
+

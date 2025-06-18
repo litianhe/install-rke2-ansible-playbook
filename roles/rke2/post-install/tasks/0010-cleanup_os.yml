@@ -1,0 +1,5 @@
+---
+- name: clean up OS
+  block:
+  - name: clean up OS
+    shell: transactional-update cleanup

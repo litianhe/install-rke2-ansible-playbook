@@ -1,0 +1,89 @@
+---
+- name: Check ansible version
+  import_playbook: ansible_version.yml
+
+# These are inventory compatibility tasks to ensure we keep compatibility with old style group names
+- name: Add k8s-cluster nodes to k8s_cluster
+  hosts: k8s-cluster
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Add nodes to k8s_cluster group
+      group_by:
+        key: 'k8s_cluster'
+      changed_when: false
+
+- name: All | Ensure OS is latest openSUSE MicroOS
+  hosts: all
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Detect OS distribution
+      raw: cat /etc/os-release
+      register: os_release
+      changed_when: false
+
+    - name: Check OS distribution
+      fail:
+        msg: "This playbook requires SUSE MicroOS to be installed on all nodes"
+      when: "'SUSE MicroOS' not in os_release.stdout"
+      changed_when: false
+
+    - name: Update the SUSE MicroOS to latest version
+      raw: transactional-update --non-interactive dist-upgrade
+      when: update_os_to_latest
+    
+
+- name: All | Ensure Python is installed on all nodes
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if Python is installed
+      shell: test -e /usr/bin/python3
+      register: python_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: All | Install python on SUSE MicroOS
+      raw: transactional-update --non-interactive pkg install python3
+      when: "python_installed.rc != 0"
+
+    - name: All | Reboot nodes after python installed
+      raw: |
+        sleep 2
+        shutdown -r now "Rebooting after Python3 installation"
+      when: "python_installed.rc != 0"
+      ignore_errors: yes
+      ignore_unreachable: yes
+
+    - name: Wait for the node to come back online
+      wait_for_connection:
+        timeout: 240
+        connect_timeout: 20
+        delay: 5
+        sleep: 5
+      when: python_installed.rc != 0
+
+    - name: Ping the node to ensure it is up
+      ping:
+      register: ping_result
+      retries: 60
+      delegate_to: localhost
+      delay: 10
+
+    - name: Fail if the node does not respond to ping
+      fail:
+        msg: "Node did not respond to ping after reboot"
+      when: ping_result.ping != 'pong'
+
+- name: All | Re-run the playbook with gather_facts enabled
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Verify Python installation
+      command: python3 --version
+      register: python_version
+      changed_when: false
+    - name: Display Python version
+      debug:
+        msg: "Python version: {{ python_version.stdout }}"

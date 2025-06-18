@@ -1,0 +1,40 @@
+---
+- name: Server | Deploy test application to test RKE2
+  when: "'rke2-server-group' in group_names"
+  block:
+  - name: Server | Generate test application yaml on nodes
+    template:
+      src: templates/test-app.yaml.tpl
+      dest: /tmp/test-app.yaml
+      mode: '0644'
+
+  - name: Server | Deploy test application
+    shell: kubectl apply -f /tmp/test-app.yaml
+    args:
+      chdir: /tmp
+    
+  - name: Server | Wait for test application to be ready
+    shell: |
+      sleep 30
+      kubectl wait --for=condition=ready pod -l app=test-app --timeout=60s
+    register: wait_result
+    failed_when: wait_result.rc != 0
+    retries: 60
+    changed_when: false
+
+  - name: Server | Get test application pods
+    shell: kubectl get pods -l app=test-app
+    register: pods
+    failed_when: pods.rc != 0
+    changed_when: false
+
+  - name: Server | Get test application ingress status
+    shell: kubectl get ingress test-ingress
+    register: ingress
+    failed_when: ingress.rc != 0
+    changed_when: false
+
+  - name: Server | Remove test-app
+    shell: |
+      kubectl delete -f /tmp/test-app.yaml
+      rm -f /tmp/test-app.yaml

@@ -1,0 +1,19 @@
+---
+- name: Configure chrony to use common NTP servers
+  blockinfile:
+    path: /etc/chrony.conf
+    block: |-
+      pool 0.pool.ntp.org iburst
+      pool 1.pool.ntp.org iburst
+      pool 2.pool.ntp.org iburst
+      pool 3.pool.ntp.org iburst
+    mode: '0644'
+    create: yes
+    marker: "# {mark} ANSIBLE AUTO MANAGED BLOCK"
+    state: present
+
+- name: Ensure chrony service is enabled and running
+  service:
+    name: chronyd
+    state: started
+    enabled: yes

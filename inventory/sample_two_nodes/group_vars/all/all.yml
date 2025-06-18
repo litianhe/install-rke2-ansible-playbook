@@ -1,0 +1,51 @@
+---
+# Architecture such as amd64
+rke2_architecture: amd64
+
+# Fixed. Only support airgap mode.
+rke2_airgap_mode: true
+
+# The absolutely path on ansible host where contains rke2 install package and image packages. 
+# File tree like:
+# rke2-airgap-images
+# ├── rke2-images-canal.linux-amd64.tar.zst
+# ├── rke2-images-cilium.linux-amd64.tar.zst
+# ├── rke2-images-core.linux-amd64.tar.zst
+# ├── rke2-images-harvester.linux-amd64.tar.zst
+# ├── rke2-images.linux-amd64.tar.zst
+# ├── rke2-images-multus.linux-amd64.tar.zst
+# ├── rke2.linux-amd64.tar.gz
+# └── sha256sum-amd64.txt
+rke2_artifact_path_local: <path to local rke2 artifacts, example /home/x/download/rke2-airgap-images>
+rke2_artifact_path_remote: "/tmp/rke2"
+rke2_version: <rke2 version, example v1.30.6%2Brke2r1>
+rke2_download_base_url: "https://github.com/rancher/rke2/releases"
+
+# Default Ansible Inventory Group name for RKE2 cluster
+rke2_cluster_group_name: k8s_cluster
+
+# Default Ansible Inventory Group name for RKE2 Servers
+rke2_servers_group_name: rke2-server-group
+
+# Default Ansible Inventory Group name for RKE2 Agents
+rke2_agents_group_name: rke2-agent-group
+
+# Domain of Kubernetes cluster tls-san , used for certificates creation
+tls_san_doman_name: <your domain name,example: k8s.com>
+
+# Docker mirror
+docker_mirror: <your docker mirror ,example http://docker.mirror.com>
+
+# Enable debug mode (rke2-service)
+rke2_debug: false
+
+# Enable deploy hubble
+deploy_hubble: false
+
+# Enable Helm. Note: It will use your internet to download helm binary
+helm_enabled: true
+helm_version: "v3.16.3"
+helm_download_url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+
+# This is where all the cert scripts and certs will be located
+# kube_cert_dir: "{{ kube_config_dir }}/ssl"

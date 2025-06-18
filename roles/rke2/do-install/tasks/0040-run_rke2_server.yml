@@ -1,0 +1,12 @@
+---
+- name: Server | Run rke2 server service
+  when: "'rke2-server-group' in group_names"
+  block: 
+  - name: Server | Enable rke2-server service on server nodes
+    shell: systemctl enable rke2-server.service
+
+  - name: Server | Start rke2-server service on server nodes
+    shell: systemctl start rke2-server.service
+
+
+

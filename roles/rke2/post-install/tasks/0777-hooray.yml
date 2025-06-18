@@ -1,0 +1,4 @@
+---
+  - name: print congratulation message
+    debug:
+      msg: "Hooray! RKE2 is installed successfully!"

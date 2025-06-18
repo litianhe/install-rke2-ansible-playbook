@@ -1,0 +1,31 @@
+--- 
+- name: Server | Check if rke2-server is installed on server nodes
+  shell: systemctl is-active --quiet rke2-server
+  register: rke2_server_check
+  changed_when: false
+  ignore_errors: true
+  when: "'rke2-server-group' in group_names"
+
+- name: Server | Install rke2-server for server nodes
+  shell: > 
+    INSTALL_RKE2_ARTIFACT_PATH={{ rke2_artifact_path_remote }}/rke2-airgap-images
+    sh {{ rke2_artifact_path_remote }}/rke2-install.sh
+  args:
+    chdir: "{{ rke2_artifact_path_remote }}"
+  when: "'rke2-server-group' in group_names and rke2_server_check.rc != 0"
+
+- name: Agent | Check if rke2-agent is installed on agent nodes
+  shell: systemctl is-active --quiet rke2-agent
+  register: rke2_agent_check
+  changed_when: false
+  ignore_errors: true
+  when: "'rke2-agent-group' in group_names"
+
+- name: Agent | Install rke2-agent for agent nodes
+  shell: > 
+    INSTALL_RKE2_ARTIFACT_PATH={{ rke2_artifact_path_remote }}/rke2-airgap-images
+    INSTALL_RKE2_TYPE="agent"
+    sh {{ rke2_artifact_path_remote }}/rke2-install.sh
+  args:
+    chdir: "{{ rke2_artifact_path_remote }}"
+  when: "'rke2-agent-group' in group_names and rke2_agent_check.rc != 0"

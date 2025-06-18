@@ -1,0 +1,44 @@
+---
+- name: Download RKE2 airgap artifacts and images locally
+  delegate_to: localhost
+  block:
+  - name: Ensure rke2_artifact_path_local directory exists
+    file:
+      path: "{{ rke2_artifact_path_local }}"
+      state: directory
+
+  - name: Download RKE2 install package
+    uri:
+      url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2.linux-amd64.tar.gz"
+      dest: "{{ rke2_artifact_path_local }}/rke2.linux-amd64.tar.gz"
+      mode: '0644'
+
+  - name: Download RKE2 checksum file
+    uri:
+      url: "{{ rke2_download_base_url }}/{{ rke2_version }}/sha256sum-amd64.txt"
+      dest: "{{ rke2_artifact_path_local }}/sha256sum-amd64.txt"
+      mode: '0644'
+
+  - name: Download RKE2 images
+    uri:
+      url: "{{ item.url }}"
+      dest: "{{ rke2_artifact_path_local }}/{{ item.filename }}"
+      mode: '0644'
+    with_items:
+      - { url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2-images.linux-amd64.tar.zst", filename: "rke2-images.linux-amd64.tar.zst" }
+      - { url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2-images-core.linux-amd64.tar.zst", filename: "rke2-images-core.linux-amd64.tar.zst" }
+      - { url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2-images-cilium.linux-amd64.tar.zst", filename: "rke2-images-cilium.linux-amd64.tar.zst" }
+      - { url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2-images-multus.linux-amd64.tar.zst", filename: "rke2-images-multus.linux-amd64.tar.zst" }
+      - { url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2-images-canal.linux-amd64.tar.zst", filename: "rke2-images-canal.linux-amd64.tar.zst" }
+      - { url: "{{ rke2_download_base_url }}/{{ rke2_version }}/rke2-images-harvester.linux-amd64.tar.zst", filename: "rke2-images-harvester.linux-amd64.tar.zst" }
+
+  - name: Download helm
+    when: helm_enabled
+    uri:
+      url: "{{ helm_download_url }}"
+      dest: "{{ rke2_artifact_path_local }}/helm-{{ helm_version }}-linux-amd64.tar.gz"
+      mode: '0644'
+
+  - name: Print completion message
+    debug:
+      msg: "RKE2 version {{ rke2_version }} has been downloaded to {{  rke2_artifact_path_local }}."

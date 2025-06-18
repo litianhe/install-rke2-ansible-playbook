@@ -1,0 +1,22 @@
+--- 
+- name: Check if rke2-server is installed on server nodes
+  shell: systemctl is-active --quiet rke2-server
+  register: rke2_server_check
+  changed_when: false
+  ignore_errors: true
+  when: "'rke2-server-group' in group_names"
+
+- name: Un-install rke2-server for server nodes
+  shell: sh /opt/rke2/bin/rke2-uninstall.sh
+  when: "'rke2-server-group' in group_names and rke2_server_check.rc == 0"
+
+- name: Check if rke2-agent is installed on agent nodes
+  shell: systemctl is-active --quiet rke2-agent
+  register: rke2_agent_check
+  changed_when: false
+  ignore_errors: true
+  when: "'rke2-agent-group' in group_names"
+
+- name: install rke2-agent for agent nodes
+  shell: sh /opt/rke2/bin/rke2-uninstall.sh
+  when: "'rke2-agent-group' in group_names and rke2_agent_check.rc == 0"

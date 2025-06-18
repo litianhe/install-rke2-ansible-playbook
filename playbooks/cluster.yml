@@ -1,0 +1,24 @@
+---
+- name: Common tasks for every playbooks
+  import_playbook: common.yml
+
+- name: Gather facts
+  import_playbook: facts.yml
+
+- name: Pre-Install
+  hosts: all
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: rke2/pre-install }
+
+- name: Install rke2 on nodes
+  hosts: all
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: rke2/do-install }
+
+- name: Post Install
+  hosts: all
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: rke2/post-install }
